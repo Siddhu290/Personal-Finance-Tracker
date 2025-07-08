@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Budgets{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Budgets</h1>
+        <div class="space-x-2">
+            <a href="{% url 'budgets:budget_overview' %}" 
+               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors duration-200">
+                <i class="fas fa-chart-pie mr-2"></i>Overview
+            </a>
+            <a href="{% url 'budgets:budget_create' %}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>Add Budget
+            </a>
+        </div>
+    </div>
+
+    <!-- Month Selection -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-6">
+        <form method="get" class="flex items-center space-x-4">
+            <label for="month" class="text-sm font-medium text-gray-700 dark:text-gray-300">Month:</label>
+            <select name="month" id="month" 
+                    class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                {% for month_option in month_options %}
+                    <option value="{{ month_option.value }}" {% if month_option.value == selected_month %}selected{% endif %}>
+                        {{ month_option.label }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200">
+                View
+            </button>
+        </form>
+    </div>
+
+    {% if budgets %}
+        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {% for budget in budgets %}
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow duration-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            {% if budget.category %}
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3"
+                                     style="background-color: {{ budget.category.color|default:'#6B7280' }}20;">
+                                    <i class="{{ budget.category.icon|default:'fas fa-tag' }}"
+                                       style="color: {{ budget.category.color|default:'#6B7280' }};"></i>
+                                </div>
+                            {% else %}
+                                <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-3">
+                                    <i class="fas fa-tag text-gray-500"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <h3 class="font-semibold text-gray-900 dark:text-white">
+                                    {% if budget.category %}{{ budget.category.name }}{% else %}General{% endif %}
+                                </h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ budget.month|date:"F Y" }}</p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <a href="{% url 'budgets:budget_update' budget.pk %}" 
+                               class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'budgets:budget_delete' budget.pk %}" 
+                               class="text-red-600 hover:text-red-800 dark:text-red-400">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Budget:</span>
+                            <span class="font-medium text-gray-900 dark:text-white">${{ budget.amount|floatformat:2 }}</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Spent:</span>
+                            <span class="font-medium {% if budget.spent > budget.amount %}text-red-600{% else %}text-gray-900 dark:text-white{% endif %}">
+                                ${{ budget.spent|floatformat:2 }}
+                            </span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Remaining:</span>
+                            <span class="font-medium {% if budget.remaining < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                                ${{ budget.remaining|floatformat:2 }}
+                            </span>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-600 dark:text-gray-400">Progress</span>
+                                <span class="{% if budget.percentage_used > 100 %}text-red-600{% elif budget.percentage_used > 80 %}text-yellow-600{% else %}text-green-600{% endif %}">
+                                    {{ budget.percentage_used|floatformat:0 }}%
+                                </span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                <div class="h-2 rounded-full {% if budget.percentage_used > 100 %}bg-red-600{% elif budget.percentage_used > 80 %}bg-yellow-500{% else %}bg-green-500{% endif %}"
+                                     style="width: {% if budget.percentage_used > 100 %}100{% else %}{{ budget.percentage_used|floatformat:0 }}{% endif %}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
+            <i class="fas fa-chart-pie text-gray-400 text-6xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Budgets for {{ selected_month|date:"F Y" }}</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">Create budgets to track your spending by category.</p>
+            <a href="{% url 'budgets:budget_create' %}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>Create Your First Budget
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

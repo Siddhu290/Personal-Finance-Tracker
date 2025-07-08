@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+
+{% block title %}Income vs Expenses Report{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Income vs Expenses</h1>
+        <a href="{% url 'reports:dashboard' %}" 
+           class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors duration-200">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Reports
+        </a>
+    </div>
+
+    <!-- Date Range Filter -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-6">
+        <form method="get" class="flex flex-wrap items-center gap-4">
+            <div>
+                <label for="start_date" class="text-sm font-medium text-gray-700 dark:text-gray-300">Start Date:</label>
+                <input type="date" name="start_date" id="start_date" 
+                       value="{{ start_date|date:'Y-m-d' }}"
+                       class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            </div>
+            <div>
+                <label for="end_date" class="text-sm font-medium text-gray-700 dark:text-gray-300">End Date:</label>
+                <input type="date" name="end_date" id="end_date" 
+                       value="{{ end_date|date:'Y-m-d' }}"
+                       class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            </div>
+            <button type="submit" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200">
+                Update Report
+            </button>
+            <button type="button" 
+                    onclick="window.financeTracker.refreshCharts()"
+                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors duration-200">
+                <i class="fas fa-sync-alt mr-2"></i>Refresh Charts
+            </button>
+        </form>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-arrow-up text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Total Income</p>
+                    <p class="text-2xl font-bold text-green-600">${{ total_income|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-arrow-down text-red-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Total Expenses</p>
+                    <p class="text-2xl font-bold text-red-600">${{ total_expenses|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 {% if net_income >= 0 %}bg-green-100 dark:bg-green-900{% else %}bg-red-100 dark:bg-red-900{% endif %} rounded-full flex items-center justify-center mr-4">
+                    <i class="fas {% if net_income >= 0 %}fa-plus text-green-600{% else %}fa-minus text-red-600{% endif %} text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Net Income</p>
+                    <p class="text-2xl font-bold {% if net_income >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                        ${{ net_income|floatformat:2 }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Income vs Expenses Over Time</h2>
+        <div class="relative h-96">
+            <canvas id="incomeExpenseChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Monthly Breakdown -->
+    {% if monthly_data %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Monthly Breakdown</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Month
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Income
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Expenses
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Net Income
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for data in monthly_data %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                    {{ data.month|date:"F Y" }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">
+                                    ${{ data.income|floatformat:2 }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600">
+                                    ${{ data.expenses|floatformat:2 }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm {% if data.net_income >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                    ${{ data.net_income|floatformat:2 }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('incomeExpenseChart').getContext('2d');
+    const isDark = document.documentElement.classList.contains('dark');
+    
+    const incomeExpenseChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: [{
+                label: 'Income',
+                data: {{ income_data|safe }},
+                borderColor: 'rgb(34, 197, 94)',
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                fill: false,
+                tension: 0.1
+            }, {
+                label: 'Expenses',
+                data: {{ expense_data|safe }},
+                borderColor: 'rgb(239, 68, 68)',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                fill: false,
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: isDark ? '#f3f4f6' : '#374151'
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: isDark ? '#f3f4f6' : '#374151',
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    },
+                    grid: {
+                        color: isDark ? '#374151' : '#e5e7eb'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: isDark ? '#f3f4f6' : '#374151'
+                    },
+                    grid: {
+                        color: isDark ? '#374151' : '#e5e7eb'
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

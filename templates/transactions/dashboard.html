@@ -1,0 +1,351 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Finance Tracker{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Welcome Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+            Welcome back, {{ user.get_full_name|default:user.username }}! 👋
+        </h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">
+            Here's your financial overview for today, {{ "now"|date:"F d, Y" }}
+        </p>
+    </div>
+    
+    <!-- Key Metrics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Balance -->
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-lg card-hover">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                            <i class="fas fa-wallet text-green-600 dark:text-green-400"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                                Total Balance
+                            </dt>
+                            <dd class="text-2xl font-bold text-gray-900 dark:text-white">
+                                ${{ total_balance|floatformat:2 }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Monthly Income -->
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-lg card-hover">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                            <i class="fas fa-arrow-up text-blue-600 dark:text-blue-400"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                                This Month Income
+                            </dt>
+                            <dd class="text-2xl font-bold income-color">
+                                +${{ current_month_income|floatformat:2 }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Monthly Expenses -->
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-lg card-hover">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                            <i class="fas fa-arrow-down text-red-600 dark:text-red-400"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                                This Month Expenses
+                            </dt>
+                            <dd class="text-2xl font-bold expense-color">
+                                -${{ current_month_expenses|floatformat:2 }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Net Worth -->
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-lg card-hover">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+                            <i class="fas fa-chart-line text-purple-600 dark:text-purple-400"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                                Net Worth
+                            </dt>
+                            <dd class="text-2xl font-bold {% if current_month_net >= 0 %}income-color{% else %}expense-color{% endif %}">
+                                {% if current_month_net >= 0 %}+{% endif %}${{ current_month_net|floatformat:2 }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Budget Alerts -->
+    {% if budget_alerts %}
+        <div class="mb-8">
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                            Budget Alerts
+                        </h3>
+                        <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+                            <ul class="list-disc pl-5 space-y-1">
+                                {% for alert in budget_alerts %}
+                                    <li>
+                                        <strong>{{ alert.budget.category.name }}</strong>: 
+                                        {{ alert.utilization|floatformat:1 }}% of budget used
+                                        {% if alert.type == 'danger' %} - Over budget!{% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="mt-4">
+                            <a href="{% url 'budgets:budget_overview' %}" class="text-sm font-medium text-yellow-800 dark:text-yellow-200 hover:text-yellow-600 dark:hover:text-yellow-100">
+                                View budget details →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Recent Transactions -->
+        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        <i class="fas fa-clock mr-2 text-gray-400"></i>
+                        Recent Transactions
+                    </h3>
+                    <a href="{% url 'transactions:transaction_list' %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400 text-sm font-medium">
+                        View all →
+                    </a>
+                </div>
+            </div>
+            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for transaction in recent_transactions %}
+                    <div class="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition duration-150">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center 
+                                          {% if transaction.transaction_type == 'income' %}bg-green-100 dark:bg-green-900/30
+                                          {% elif transaction.transaction_type == 'expense' %}bg-red-100 dark:bg-red-900/30
+                                          {% else %}bg-purple-100 dark:bg-purple-900/30{% endif %}">
+                                    {% if transaction.category %}
+                                        <span class="text-lg">{{ transaction.category.icon }}</span>
+                                    {% else %}
+                                        <i class="fas fa-exchange-alt 
+                                               {% if transaction.transaction_type == 'income' %}text-green-600 dark:text-green-400
+                                               {% elif transaction.transaction_type == 'expense' %}text-red-600 dark:text-red-400
+                                               {% else %}text-purple-600 dark:text-purple-400{% endif %}"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                        {{ transaction.description }}
+                                    </p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        {{ transaction.account.name }} • {{ transaction.date|date:"M d" }}
+                                        {% if transaction.category %} • {{ transaction.category.name }}{% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-semibold 
+                                         {% if transaction.transaction_type == 'income' %}income-color
+                                         {% elif transaction.transaction_type == 'expense' %}expense-color
+                                         {% else %}transfer-color{% endif %}">
+                                    {{ transaction.get_amount_display }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="px-6 py-8 text-center">
+                        <i class="fas fa-receipt text-gray-300 dark:text-gray-600 text-4xl mb-4"></i>
+                        <p class="text-gray-500 dark:text-gray-400">No transactions yet</p>
+                        <a href="{% url 'transactions:transaction_create' %}" class="mt-2 text-primary-600 hover:text-primary-500 dark:text-primary-400 text-sm font-medium">
+                            Add your first transaction →
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Account Balances -->
+        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        <i class="fas fa-piggy-bank mr-2 text-gray-400"></i>
+                        Account Balances
+                    </h3>
+                    <a href="{% url 'accounts:account_list' %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400 text-sm font-medium">
+                        Manage →
+                    </a>
+                </div>
+            </div>
+            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for account in accounts %}
+                    <div class="px-6 py-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                                    <i class="fas fa-{% if account.account_type == 'checking' %}university
+                                                     {% elif account.account_type == 'savings' %}piggy-bank
+                                                     {% elif account.account_type == 'credit_card' %}credit-card
+                                                     {% elif account.account_type == 'cash' %}money-bill-wave
+                                                     {% elif account.account_type == 'investment' %}chart-line
+                                                     {% else %}wallet{% endif %} text-gray-600 dark:text-gray-400"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                        {{ account.name }}
+                                    </p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        {{ account.get_account_type_display }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                                    {{ account.get_balance_display }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="px-6 py-8 text-center">
+                        <i class="fas fa-wallet text-gray-300 dark:text-gray-600 text-4xl mb-4"></i>
+                        <p class="text-gray-500 dark:text-gray-400">No accounts added yet</p>
+                        <a href="{% url 'accounts:account_create' %}" class="mt-2 text-primary-600 hover:text-primary-500 dark:text-primary-400 text-sm font-medium">
+                            Add your first account →
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Upcoming Recurring Transactions -->
+    {% if upcoming_recurring %}
+        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg mb-8">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        <i class="fas fa-calendar-alt mr-2 text-gray-400"></i>
+                        Upcoming Bills & Subscriptions
+                    </h3>
+                    <a href="{% url 'transactions:recurring_list' %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400 text-sm font-medium">
+                        View all →
+                    </a>
+                </div>
+            </div>
+            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for recurring in upcoming_recurring %}
+                    <div class="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition duration-150">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                                    {% if recurring.category %}
+                                        <span class="text-lg">{{ recurring.category.icon }}</span>
+                                    {% else %}
+                                        <i class="fas fa-repeat text-orange-600 dark:text-orange-400"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                        {{ recurring.description }}
+                                    </p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        {{ recurring.get_frequency_display }} • Due {{ recurring.next_due_date|date:"M d" }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-semibold 
+                                         {% if recurring.transaction_type == 'income' %}income-color
+                                         {% else %}expense-color{% endif %}">
+                                    {% if recurring.transaction_type == 'income' %}+{% else %}-{% endif %}${{ recurring.amount|floatformat:2 }}
+                                </p>
+                                <a href="{% url 'transactions:recurring_execute' recurring.pk %}" 
+                                   class="text-xs text-primary-600 hover:text-primary-500 dark:text-primary-400">
+                                    Execute now →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+    
+    <!-- Quick Actions -->
+    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                <i class="fas fa-bolt mr-2 text-gray-400"></i>
+                Quick Actions
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <a href="{% url 'transactions:transaction_create' %}" class="group flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition duration-200">
+                    <i class="fas fa-plus text-2xl text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400 mb-2"></i>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400">Add Transaction</span>
+                </a>
+                
+                <a href="{% url 'transactions:transfer_create' %}" class="group flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition duration-200">
+                    <i class="fas fa-exchange-alt text-2xl text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400 mb-2"></i>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400">Transfer Funds</span>
+                </a>
+                
+                <a href="{% url 'budgets:budget_create' %}" class="group flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition duration-200">
+                    <i class="fas fa-chart-pie text-2xl text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400 mb-2"></i>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400">Create Budget</span>
+                </a>
+                
+                <a href="{% url 'reports:dashboard' %}" class="group flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition duration-200">
+                    <i class="fas fa-chart-bar text-2xl text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400 mb-2"></i>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400">View Reports</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

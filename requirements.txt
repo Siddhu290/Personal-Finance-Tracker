@@ -1,0 +1,10 @@
+Django>=4.2
+django-crispy-forms
+crispy-tailwind
+Pillow
+django-environ
+python-decouple
+openpyxl
+pandas
+psycopg2-binary
+python-dotenv

@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Monthly Report - Finance Tracker{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                Monthly Report - {{ month|date:'F Y' }}
+            </h1>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">Detailed financial summary for the month</p>
+        </div>
+
+        <!-- Month Navigation -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
+            <div class="flex items-center justify-between">
+                <a href="{% url 'reports:monthly_report' year=prev_month.year month=prev_month.month %}" 
+                   class="flex items-center text-blue-600 hover:text-blue-700">
+                    <i class="fas fa-chevron-left mr-2"></i>
+                    {{ prev_month|date:'M Y' }}
+                </a>
+                
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+                    {{ month|date:'F Y' }}
+                </h2>
+                
+                <a href="{% url 'reports:monthly_report' year=next_month.year month=next_month.month %}" 
+                   class="flex items-center text-blue-600 hover:text-blue-700">
+                    {{ next_month|date:'M Y' }}
+                    <i class="fas fa-chevron-right ml-2"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="bg-green-100 dark:bg-green-900/30 p-3 rounded-full mr-4">
+                        <i class="fas fa-arrow-up text-green-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Income</p>
+                        <p class="text-xl font-bold text-green-600">${{ total_income|floatformat:2 }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="bg-red-100 dark:bg-red-900/30 p-3 rounded-full mr-4">
+                        <i class="fas fa-arrow-down text-red-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Expenses</p>
+                        <p class="text-xl font-bold text-red-600">${{ total_expenses|floatformat:2 }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full mr-4">
+                        <i class="fas fa-calculator text-blue-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Net Income</p>
+                        <p class="text-xl font-bold {% if net_income >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            ${{ net_income|floatformat:2 }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-full mr-4">
+                        <i class="fas fa-piggy-bank text-purple-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Savings Rate</p>
+                        <p class="text-xl font-bold text-purple-600">{{ savings_rate|floatformat:1 }}%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Category Breakdown -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Expense Categories</h2>
+                <div class="space-y-4">
+                    {% for category in expense_categories %}
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center mr-3"
+                                 style="background-color: {{ category.color|default:'#6366f1' }}20;">
+                                <i class="{{ category.icon|default:'fas fa-tag' }} text-sm"
+                                   style="color: {{ category.color|default:'#6366f1' }};"></i>
+                            </div>
+                            <span class="text-gray-900 dark:text-white">{{ category.name }}</span>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold text-gray-900 dark:text-white">
+                                ${{ category.total|floatformat:2 }}
+                            </p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                {{ category.percentage|floatformat:1 }}%
+                            </p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-gray-500 dark:text-gray-400 text-center py-4">
+                        No expense categories this month.
+                    </p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Daily Spending Chart -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Daily Spending</h2>
+                <div class="relative h-64">
+                    <canvas id="dailyChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget vs Actual -->
+        {% if budgets %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Budget vs Actual</h2>
+            <div class="space-y-4">
+                {% for budget in budgets %}
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center mr-3"
+                                 style="background-color: {{ budget.category.color|default:'#6366f1' }}20;">
+                                <i class="{{ budget.category.icon|default:'fas fa-tag' }} text-sm"
+                                   style="color: {{ budget.category.color|default:'#6366f1' }};"></i>
+                            </div>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ budget.category.name }}</span>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                ${{ budget.spent|floatformat:2 }} / ${{ budget.amount|floatformat:2 }}
+                            </p>
+                            <p class="text-sm {% if budget.over_budget %}text-red-600{% else %}text-green-600{% endif %}">
+                                {% if budget.over_budget %}
+                                    Over by ${{ budget.over_amount|floatformat:2 }}
+                                {% else %}
+                                    ${{ budget.remaining|floatformat:2 }} remaining
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div class="{% if budget.over_budget %}bg-red-600{% else %}bg-green-600{% endif %} h-2 rounded-full"
+                             style="width: {{ budget.percentage|floatformat:0 }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recent Transactions -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Recent Transactions</h2>
+            <div class="space-y-3">
+                {% for transaction in recent_transactions %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3"
+                             style="background-color: {{ transaction.category.color|default:'#6366f1' }}20;">
+                            <i class="{{ transaction.category.icon|default:'fas fa-tag' }} text-sm"
+                               style="color: {{ transaction.category.color|default:'#6366f1' }};"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900 dark:text-white">{{ transaction.description }}</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                {{ transaction.date|date:'M j' }} • {{ transaction.category.name }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-semibold {% if transaction.transaction_type == 'income' %}text-green-600{% else %}text-red-600{% endif %}">
+                            {% if transaction.transaction_type == 'income' %}+{% else %}-{% endif %}${{ transaction.amount|floatformat:2 }}
+                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ transaction.account.name }}</p>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 dark:text-gray-400 text-center py-8">
+                    No transactions this month.
+                </p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Daily Spending Chart
+    const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+    new Chart(dailyCtx, {
+        type: 'line',
+        data: {
+            labels: {{ daily_labels|safe }},
+            datasets: [{
+                label: 'Daily Spending',
+                data: {{ daily_spending|safe }},
+                borderColor: 'rgba(239, 68, 68, 1)',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toFixed(2);
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

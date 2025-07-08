@@ -1,0 +1,333 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Account Summary - Finance Tracker{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Account Summary</h1>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">Overview of all your financial accounts</p>
+        </div>
+
+        <!-- Total Balance Card -->
+        <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-lg p-8 text-white mb-8">
+            <div class="text-center">
+                <h2 class="text-lg font-medium opacity-90">Total Net Worth</h2>
+                <p class="text-4xl font-bold mt-2">${{ total_balance|floatformat:2 }}</p>
+                <p class="text-sm opacity-75 mt-2">
+                    {% if balance_change >= 0 %}
+                        <i class="fas fa-arrow-up"></i> +${{ balance_change|floatformat:2 }}
+                    {% else %}
+                        <i class="fas fa-arrow-down"></i> ${{ balance_change|floatformat:2 }}
+                    {% endif %}
+                    from last month
+                </p>
+            </div>
+        </div>
+
+        <!-- Account Type Breakdown -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="bg-green-100 dark:bg-green-900/30 p-3 rounded-full mr-4">
+                        <i class="fas fa-university text-green-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Banking</p>
+                        <p class="text-xl font-bold text-gray-900 dark:text-white">
+                            ${{ banking_total|floatformat:2 }}
+                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            {{ banking_count }} account{{ banking_count|pluralize }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="bg-red-100 dark:bg-red-900/30 p-3 rounded-full mr-4">
+                        <i class="fas fa-credit-card text-red-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Credit Cards</p>
+                        <p class="text-xl font-bold text-gray-900 dark:text-white">
+                            ${{ credit_total|floatformat:2 }}
+                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            {{ credit_count }} card{{ credit_count|pluralize }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full mr-4">
+                        <i class="fas fa-chart-line text-blue-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Investments</p>
+                        <p class="text-xl font-bold text-gray-900 dark:text-white">
+                            ${{ investment_total|floatformat:2 }}
+                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            {{ investment_count }} account{{ investment_count|pluralize }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="bg-yellow-100 dark:bg-yellow-900/30 p-3 rounded-full mr-4">
+                        <i class="fas fa-wallet text-yellow-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Cash</p>
+                        <p class="text-xl font-bold text-gray-900 dark:text-white">
+                            ${{ cash_total|floatformat:2 }}
+                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            {{ cash_count }} account{{ cash_count|pluralize }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Account Balance Distribution -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Balance Distribution</h2>
+                <div class="relative h-64">
+                    <canvas id="balanceChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Account Type Distribution -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Account Types</h2>
+                <div class="relative h-64">
+                    <canvas id="typeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Details -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Account Details</h2>
+            <div class="space-y-6">
+                {% regroup accounts by account_type as account_groups %}
+                {% for group in account_groups %}
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                        {% if group.grouper == 'checking' %}
+                            <i class="fas fa-university text-blue-600 mr-2"></i>
+                            Checking Accounts
+                        {% elif group.grouper == 'savings' %}
+                            <i class="fas fa-piggy-bank text-green-600 mr-2"></i>
+                            Savings Accounts
+                        {% elif group.grouper == 'credit_card' %}
+                            <i class="fas fa-credit-card text-red-600 mr-2"></i>
+                            Credit Cards
+                        {% elif group.grouper == 'investment' %}
+                            <i class="fas fa-chart-line text-purple-600 mr-2"></i>
+                            Investment Accounts
+                        {% elif group.grouper == 'cash' %}
+                            <i class="fas fa-wallet text-yellow-600 mr-2"></i>
+                            Cash Accounts
+                        {% else %}
+                            <i class="fas fa-university text-gray-600 mr-2"></i>
+                            {{ group.grouper|title }} Accounts
+                        {% endif %}
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {% for account in group.list %}
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
+                            <div class="flex items-start justify-between mb-3">
+                                <div>
+                                    <h4 class="font-medium text-gray-900 dark:text-white">{{ account.name }}</h4>
+                                    {% if account.bank %}
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ account.bank }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-semibold {% if account.balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                        ${{ account.balance|floatformat:2 }}
+                                    </p>
+                                    {% if account.account_type == 'credit_card' and account.credit_limit %}
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                                        Limit: ${{ account.credit_limit|floatformat:2 }}
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            {% if account.account_type == 'credit_card' and account.credit_limit %}
+                            <div class="mb-3">
+                                <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                    <span>Credit Utilization</span>
+                                    <span>{{ account.utilization|floatformat:1 }}%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                    <div class="{% if account.utilization > 80 %}bg-red-600{% elif account.utilization > 30 %}bg-yellow-600{% else %}bg-green-600{% endif %} h-2 rounded-full"
+                                         style="width: {{ account.utilization|floatformat:0 }}%"></div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="flex justify-between items-center">
+                                <div class="flex space-x-2">
+                                    <a href="{% url 'accounts:account_detail' account.pk %}" 
+                                       class="text-blue-600 hover:text-blue-700 text-sm">
+                                        View
+                                    </a>
+                                    <a href="{% url 'accounts:account_update' account.pk %}" 
+                                       class="text-gray-600 hover:text-gray-700 text-sm">
+                                        Edit
+                                    </a>
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">
+                                    {{ account.recent_transaction_count }} recent
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-12">
+                    <i class="fas fa-university text-gray-400 text-4xl mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No accounts found</h3>
+                    <p class="text-gray-500 dark:text-gray-400 mb-4">
+                        Get started by adding your first financial account.
+                    </p>
+                    <a href="{% url 'accounts:account_create' %}" 
+                       class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md inline-flex items-center">
+                        <i class="fas fa-plus mr-2"></i>
+                        Add Account
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Balance History -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Balance History</h2>
+            <div class="relative h-64">
+                <canvas id="historyChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Balance Distribution Chart
+    const balanceCtx = document.getElementById('balanceChart').getContext('2d');
+    new Chart(balanceCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ account_labels|safe }},
+            datasets: [{
+                data: {{ account_balances|safe }},
+                backgroundColor: [
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(34, 197, 94, 0.8)',
+                    'rgba(239, 68, 68, 0.8)',
+                    'rgba(168, 85, 247, 0.8)',
+                    'rgba(245, 158, 11, 0.8)',
+                    'rgba(236, 72, 153, 0.8)',
+                    'rgba(14, 165, 233, 0.8)',
+                    'rgba(34, 197, 94, 0.8)'
+                ],
+                borderWidth: 2,
+                borderColor: 'rgba(255, 255, 255, 0.8)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Account Type Distribution Chart
+    const typeCtx = document.getElementById('typeChart').getContext('2d');
+    new Chart(typeCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ type_labels|safe }},
+            datasets: [{
+                data: {{ type_balances|safe }},
+                backgroundColor: [
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(34, 197, 94, 0.8)',
+                    'rgba(239, 68, 68, 0.8)',
+                    'rgba(168, 85, 247, 0.8)',
+                    'rgba(245, 158, 11, 0.8)'
+                ],
+                borderWidth: 2,
+                borderColor: 'rgba(255, 255, 255, 0.8)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Balance History Chart
+    const historyCtx = document.getElementById('historyChart').getContext('2d');
+    new Chart(historyCtx, {
+        type: 'line',
+        data: {
+            labels: {{ history_labels|safe }},
+            datasets: [{
+                label: 'Total Balance',
+                data: {{ history_balances|safe }},
+                borderColor: 'rgba(59, 130, 246, 1)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toFixed(2);
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

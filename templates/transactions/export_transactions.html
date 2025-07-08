@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}Export Transactions{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">Export Transactions</h1>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="start_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Start Date
+                        </label>
+                        <input type="date" name="start_date" id="start_date" 
+                               value="{{ default_start_date|date:'Y-m-d' }}"
+                               class="block w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label for="end_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            End Date
+                        </label>
+                        <input type="date" name="end_date" id="end_date" 
+                               value="{{ default_end_date|date:'Y-m-d' }}"
+                               class="block w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="accounts" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Accounts (leave empty for all accounts)
+                    </label>
+                    <select name="accounts" id="accounts" multiple 
+                            class="block w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white h-32">
+                        {% for account in user_accounts %}
+                            <option value="{{ account.id }}">{{ account.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Hold Ctrl/Cmd to select multiple accounts</p>
+                </div>
+                
+                <div>
+                    <label for="categories" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Categories (leave empty for all categories)
+                    </label>
+                    <select name="categories" id="categories" multiple 
+                            class="block w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white h-32">
+                        {% for category in user_categories %}
+                            <option value="{{ category.id }}">{{ category.name }} ({{ category.get_category_type_display }})</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Hold Ctrl/Cmd to select multiple categories</p>
+                </div>
+                
+                <div>
+                    <label for="transaction_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Transaction Type
+                    </label>
+                    <select name="transaction_type" id="transaction_type" 
+                            class="block w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <option value="">All Types</option>
+                        <option value="income">Income Only</option>
+                        <option value="expense">Expenses Only</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="format" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Export Format
+                    </label>
+                    <select name="format" id="format" 
+                            class="block w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <option value="csv">CSV (Comma Separated Values)</option>
+                        <option value="excel">Excel (.xlsx)</option>
+                    </select>
+                </div>
+                
+                <div class="space-y-3">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Include Columns:</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="include_fields" value="date" checked
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Date</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="include_fields" value="description" checked
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Description</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="include_fields" value="amount" checked
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Amount</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="include_fields" value="type" checked
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Type</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="include_fields" value="account" checked
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Account</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="include_fields" value="category" checked
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Category</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="include_fields" value="notes"
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Notes</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="include_fields" value="tags"
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Tags</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between items-center pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <a href="{% url 'transactions:transaction_list' %}" 
+                       class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors duration-200">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors duration-200">
+                        <i class="fas fa-download mr-2"></i>Export Transactions
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-6">
+            <div class="flex">
+                <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
+                <div>
+                    <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">Export Information</h3>
+                    <p class="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                        Your exported file will be downloaded immediately. The file includes all transactions matching your criteria with the selected columns.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

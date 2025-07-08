@@ -1,0 +1,396 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Yearly Report - Finance Tracker{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                Yearly Report - {{ year }}
+            </h1>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">Annual financial summary and analysis</p>
+        </div>
+
+        <!-- Year Navigation -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
+            <div class="flex items-center justify-between">
+                <a href="{% url 'reports:yearly_report' year=prev_year %}" 
+                   class="flex items-center text-blue-600 hover:text-blue-700">
+                    <i class="fas fa-chevron-left mr-2"></i>
+                    {{ prev_year }}
+                </a>
+                
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+                    {{ year }}
+                </h2>
+                
+                <a href="{% url 'reports:yearly_report' year=next_year %}" 
+                   class="flex items-center text-blue-600 hover:text-blue-700">
+                    {{ next_year }}
+                    <i class="fas fa-chevron-right ml-2"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="bg-green-100 dark:bg-green-900/30 p-3 rounded-full mr-4">
+                        <i class="fas fa-arrow-up text-green-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Income</p>
+                        <p class="text-2xl font-bold text-green-600">${{ total_income|floatformat:2 }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            Avg: ${{ avg_monthly_income|floatformat:2 }}/month
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="bg-red-100 dark:bg-red-900/30 p-3 rounded-full mr-4">
+                        <i class="fas fa-arrow-down text-red-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Expenses</p>
+                        <p class="text-2xl font-bold text-red-600">${{ total_expenses|floatformat:2 }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            Avg: ${{ avg_monthly_expenses|floatformat:2 }}/month
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full mr-4">
+                        <i class="fas fa-calculator text-blue-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Net Income</p>
+                        <p class="text-2xl font-bold {% if net_income >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            ${{ net_income|floatformat:2 }}
+                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            Avg: ${{ avg_monthly_net|floatformat:2 }}/month
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-full mr-4">
+                        <i class="fas fa-piggy-bank text-purple-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Savings Rate</p>
+                        <p class="text-2xl font-bold text-purple-600">{{ savings_rate|floatformat:1 }}%</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            Target: 20%
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Monthly Trend -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Monthly Trend</h2>
+                <div class="relative h-64">
+                    <canvas id="monthlyTrendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Category Distribution -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Expense Distribution</h2>
+                <div class="relative h-64">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Breakdown Table -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Monthly Breakdown</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                        <tr>
+                            <th class="px-6 py-3">Month</th>
+                            <th class="px-6 py-3">Income</th>
+                            <th class="px-6 py-3">Expenses</th>
+                            <th class="px-6 py-3">Net</th>
+                            <th class="px-6 py-3">Savings Rate</th>
+                            <th class="px-6 py-3">Top Category</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for month_data in monthly_breakdown %}
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                                <a href="{% url 'reports:monthly_report' year=month_data.year month=month_data.month %}" 
+                                   class="text-blue-600 hover:text-blue-700">
+                                    {{ month_data.date|date:'M Y' }}
+                                </a>
+                            </td>
+                            <td class="px-6 py-4 text-green-600">${{ month_data.income|floatformat:2 }}</td>
+                            <td class="px-6 py-4 text-red-600">${{ month_data.expenses|floatformat:2 }}</td>
+                            <td class="px-6 py-4 {% if month_data.net >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                ${{ month_data.net|floatformat:2 }}
+                            </td>
+                            <td class="px-6 py-4">{{ month_data.savings_rate|floatformat:1 }}%</td>
+                            <td class="px-6 py-4">{{ month_data.top_category|default:'-' }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                            <td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                                No data available for {{ year }}.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Top Categories -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Top Expense Categories -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Top Expense Categories</h2>
+                <div class="space-y-4">
+                    {% for category in top_expense_categories %}
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3"
+                                 style="background-color: {{ category.color|default:'#6366f1' }}20;">
+                                <i class="{{ category.icon|default:'fas fa-tag' }} text-lg"
+                                   style="color: {{ category.color|default:'#6366f1' }};"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-900 dark:text-white">{{ category.name }}</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    {{ category.transaction_count }} transaction{{ category.transaction_count|pluralize }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold text-gray-900 dark:text-white">
+                                ${{ category.total|floatformat:2 }}
+                            </p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                ${{ category.monthly_avg|floatformat:2 }}/month
+                            </p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-gray-500 dark:text-gray-400 text-center py-8">
+                        No expense categories found.
+                    </p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Top Income Categories -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Top Income Categories</h2>
+                <div class="space-y-4">
+                    {% for category in top_income_categories %}
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3"
+                                 style="background-color: {{ category.color|default:'#22c55e' }}20;">
+                                <i class="{{ category.icon|default:'fas fa-tag' }} text-lg"
+                                   style="color: {{ category.color|default:'#22c55e' }};"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-900 dark:text-white">{{ category.name }}</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    {{ category.transaction_count }} transaction{{ category.transaction_count|pluralize }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold text-gray-900 dark:text-white">
+                                ${{ category.total|floatformat:2 }}
+                            </p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                ${{ category.monthly_avg|floatformat:2 }}/month
+                            </p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-gray-500 dark:text-gray-400 text-center py-8">
+                        No income categories found.
+                    </p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Goals Progress -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Financial Goals Progress</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Emergency Fund Goal -->
+                <div class="text-center">
+                    <div class="relative inline-flex items-center justify-center w-24 h-24 mb-4">
+                        <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+                            <path class="text-gray-300 dark:text-gray-600"
+                                  stroke="currentColor"
+                                  stroke-width="3"
+                                  fill="none"
+                                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            <path class="text-blue-600"
+                                  stroke="currentColor"
+                                  stroke-width="3"
+                                  fill="none"
+                                  stroke-linecap="round"
+                                  stroke-dasharray="75, 100"
+                                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        </svg>
+                        <span class="absolute text-sm font-medium text-gray-900 dark:text-white">75%</span>
+                    </div>
+                    <h3 class="font-medium text-gray-900 dark:text-white">Emergency Fund</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">$7,500 / $10,000</p>
+                </div>
+
+                <!-- Savings Goal -->
+                <div class="text-center">
+                    <div class="relative inline-flex items-center justify-center w-24 h-24 mb-4">
+                        <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+                            <path class="text-gray-300 dark:text-gray-600"
+                                  stroke="currentColor"
+                                  stroke-width="3"
+                                  fill="none"
+                                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            <path class="text-green-600"
+                                  stroke="currentColor"
+                                  stroke-width="3"
+                                  fill="none"
+                                  stroke-linecap="round"
+                                  stroke-dasharray="60, 100"
+                                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        </svg>
+                        <span class="absolute text-sm font-medium text-gray-900 dark:text-white">60%</span>
+                    </div>
+                    <h3 class="font-medium text-gray-900 dark:text-white">Annual Savings</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">$12,000 / $20,000</p>
+                </div>
+
+                <!-- Investment Goal -->
+                <div class="text-center">
+                    <div class="relative inline-flex items-center justify-center w-24 h-24 mb-4">
+                        <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+                            <path class="text-gray-300 dark:text-gray-600"
+                                  stroke="currentColor"
+                                  stroke-width="3"
+                                  fill="none"
+                                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            <path class="text-purple-600"
+                                  stroke="currentColor"
+                                  stroke-width="3"
+                                  fill="none"
+                                  stroke-linecap="round"
+                                  stroke-dasharray="45, 100"
+                                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        </svg>
+                        <span class="absolute text-sm font-medium text-gray-900 dark:text-white">45%</span>
+                    </div>
+                    <h3 class="font-medium text-gray-900 dark:text-white">Investments</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">$9,000 / $20,000</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Monthly Trend Chart
+    const monthlyCtx = document.getElementById('monthlyTrendChart').getContext('2d');
+    new Chart(monthlyCtx, {
+        type: 'line',
+        data: {
+            labels: {{ monthly_labels|safe }},
+            datasets: [
+                {
+                    label: 'Income',
+                    data: {{ monthly_income|safe }},
+                    borderColor: 'rgba(34, 197, 94, 1)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    fill: false
+                },
+                {
+                    label: 'Expenses',
+                    data: {{ monthly_expenses|safe }},
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    fill: false
+                },
+                {
+                    label: 'Net',
+                    data: {{ monthly_net|safe }},
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toFixed(2);
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Category Distribution Chart
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ category_labels|safe }},
+            datasets: [{
+                data: {{ category_values|safe }},
+                backgroundColor: {{ category_colors|safe }},
+                borderWidth: 2,
+                borderColor: 'rgba(255, 255, 255, 0.8)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

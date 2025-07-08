@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Transfer Money{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">Transfer Money</h1>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                <div class="flex">
+                    <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
+                    <div>
+                        <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">About Transfers</h3>
+                        <p class="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                            Transfers move money between your accounts. This will create two transactions: one withdrawal from the source account and one deposit to the destination account.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.from_account.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ form.from_account.label }}
+                        </label>
+                        {{ form.from_account }}
+                        {% if form.from_account.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.from_account.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.to_account.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ form.to_account.label }}
+                        </label>
+                        {{ form.to_account }}
+                        {% if form.to_account.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.to_account.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.amount.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ form.amount.label }}
+                        </label>
+                        {{ form.amount }}
+                        {% if form.amount.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.amount.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.date.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ form.date.label }}
+                        </label>
+                        {{ form.date }}
+                        {% if form.date.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.date.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {{ form.description.label }}
+                    </label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.description.errors }}</div>
+                    {% endif %}
+                </div>
+                </div>
+                
+                <div class="flex justify-between items-center pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <a href="{% url 'transactions:dashboard' %}" 
+                       class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors duration-200">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors duration-200">
+                        <i class="fas fa-exchange-alt mr-2"></i>Create Transfer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fromAccount = document.getElementById('id_from_account');
+    const toAccount = document.getElementById('id_to_account');
+    
+    if (fromAccount && toAccount) {
+        function updateToAccountOptions() {
+            const selectedFromAccount = fromAccount.value;
+            const toAccountOptions = toAccount.querySelectorAll('option');
+            
+            toAccountOptions.forEach(option => {
+                if (option.value === selectedFromAccount && option.value !== '') {
+                    option.style.display = 'none';
+                    option.disabled = true;
+                } else {
+                    option.style.display = 'block';
+                    option.disabled = false;
+                }
+            });
+        }
+        
+        fromAccount.addEventListener('change', updateToAccountOptions);
+        updateToAccountOptions();
+    }
+});
+</script>
+{% endblock %}

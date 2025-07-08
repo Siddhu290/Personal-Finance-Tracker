@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}My Accounts{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">My Accounts</h1>
+        <a href="{% url 'accounts:account_create' %}" 
+           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200">
+            <i class="fas fa-plus mr-2"></i>Add Account
+        </a>
+    </div>
+
+    {% if accounts %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for account in accounts %}
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow duration-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center mr-4"
+                                 style="background-color: {{ account.color|default:'#3B82F6' }}20;">
+                                <i class="{{ account.icon|default:'fas fa-university' }} text-2xl"
+                                   style="color: {{ account.color|default:'#3B82F6' }};"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ account.name }}</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ account.get_account_type_display }}</p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <a href="{% url 'accounts:account_update' account.pk %}" 
+                               class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'accounts:account_delete' account.pk %}" 
+                               class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <p class="text-3xl font-bold {% if account.balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            ${{ account.balance|floatformat:2 }}
+                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Current Balance</p>
+                    </div>
+                    
+                    {% if account.description %}
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mt-4 border-t pt-4">
+                            {{ account.description|truncatewords:20 }}
+                        </p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
+            <i class="fas fa-university text-gray-400 text-6xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Accounts Yet</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">Start by adding your first financial account.</p>
+            <a href="{% url 'accounts:account_create' %}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>Add Your First Account
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

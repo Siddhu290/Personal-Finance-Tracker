@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Execute Recurring Transaction{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">Execute Recurring Transaction</h1>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+            <div class="flex items-center mb-6">
+                {% if recurring_transaction.category %}
+                    <div class="w-16 h-16 rounded-full flex items-center justify-center mr-4"
+                         style="background-color: {{ recurring_transaction.category.color|default:'#6B7280' }}20;">
+                        <i class="{{ recurring_transaction.category.icon|default:'fas fa-sync-alt' }} text-2xl"
+                           style="color: {{ recurring_transaction.category.color|default:'#6B7280' }};"></i>
+                    </div>
+                {% else %}
+                    <div class="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-4">
+                        <i class="fas fa-sync-alt text-2xl text-gray-500"></i>
+                    </div>
+                {% endif %}
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ recurring_transaction.description }}</h2>
+                    <p class="text-gray-600 dark:text-gray-400">{{ recurring_transaction.account.name }}</p>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-6 mb-6">
+                <div class="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Amount</p>
+                    <p class="text-2xl font-bold {% if recurring_transaction.transaction_type == 'income' %}text-green-600{% else %}text-red-600{% endif %}">
+                        {% if recurring_transaction.transaction_type == 'income' %}+{% else %}-{% endif %}${{ recurring_transaction.amount|floatformat:2 }}
+                    </p>
+                </div>
+                <div class="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Frequency</p>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ recurring_transaction.get_frequency_display }}</p>
+                </div>
+            </div>
+            
+            <div class="space-y-3 text-sm mb-6">
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Category:</span>
+                    <span class="font-medium text-gray-900 dark:text-white">
+                        {% if recurring_transaction.category %}{{ recurring_transaction.category.name }}{% else %}Uncategorized{% endif %}
+                    </span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Type:</span>
+                    <span class="font-medium {% if recurring_transaction.transaction_type == 'income' %}text-green-600{% else %}text-red-600{% endif %}">
+                        {{ recurring_transaction.get_transaction_type_display }}
+                    </span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Last Execution:</span>
+                    <span class="font-medium text-gray-900 dark:text-white">
+                        {% if recurring_transaction.last_executed %}{{ recurring_transaction.last_executed|date:"M d, Y" }}{% else %}Never{% endif %}
+                    </span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Next Due:</span>
+                    <span class="font-medium text-gray-900 dark:text-white">{{ recurring_transaction.next_execution_date|date:"M d, Y" }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+            <div class="flex">
+                <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
+                <div>
+                    <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">Execution Confirmation</h3>
+                    <p class="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                        This will create a new transaction based on the recurring transaction template. 
+                        The transaction date will be set to today, and the next execution date will be updated.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        {% if confirmation_required %}
+            <form method="post" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    <div>
+                        <label for="execution_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Transaction Date
+                        </label>
+                        <input type="date" name="execution_date" id="execution_date" 
+                               value="{{ today|date:'Y-m-d' }}"
+                               class="block w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                    
+                    <div>
+                        <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Additional Notes (optional)
+                        </label>
+                        <textarea name="notes" id="notes" rows="3" 
+                                  class="block w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  placeholder="Add any additional notes for this execution..."></textarea>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <input type="checkbox" name="update_next_execution" id="update_next_execution" checked
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="update_next_execution" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                            Automatically update next execution date
+                        </label>
+                    </div>
+                    
+                    <div class="flex justify-between items-center pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <a href="{% url 'transactions:recurring_list' %}" 
+                           class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors duration-200">
+                            Cancel
+                        </a>
+                        <button type="submit" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors duration-200">
+                            <i class="fas fa-play mr-2"></i>Execute Transaction
+                        </button>
+                    </div>
+                </div>
+            </form>
+        {% else %}
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 text-center">
+                <i class="fas fa-check-circle text-green-500 text-4xl mb-4"></i>
+                <h3 class="text-lg font-semibold text-green-900 dark:text-green-200 mb-2">Transaction Executed Successfully!</h3>
+                <p class="text-green-800 dark:text-green-300 mb-4">
+                    The recurring transaction has been executed and a new transaction has been created.
+                </p>
+                <div class="space-x-4">
+                    <a href="{% url 'transactions:transaction_list' %}" 
+                       class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors duration-200">
+                        View Transactions
+                    </a>
+                    <a href="{% url 'transactions:recurring_list' %}" 
+                       class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors duration-200">
+                        Back to Recurring
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

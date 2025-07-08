@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}Recurring Transactions{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Recurring Transactions</h1>
+        <a href="{% url 'transactions:recurring_create' %}" 
+           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200">
+            <i class="fas fa-plus mr-2"></i>Add Recurring Transaction
+        </a>
+    </div>
+
+    {% if recurring_transactions %}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {% for recurring in recurring_transactions %}
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow duration-200">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center">
+                            {% if recurring.category %}
+                                <div class="w-12 h-12 rounded-full flex items-center justify-center mr-4"
+                                     style="background-color: {{ recurring.category.color|default:'#6B7280' }}20;">
+                                    <i class="{{ recurring.category.icon|default:'fas fa-sync-alt' }}"
+                                       style="color: {{ recurring.category.color|default:'#6B7280' }};"></i>
+                                </div>
+                            {% else %}
+                                <div class="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-4">
+                                    <i class="fas fa-sync-alt text-gray-500"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ recurring.description }}</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ recurring.account.name }}</p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <a href="{% url 'transactions:recurring_update' recurring.pk %}" 
+                               class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'transactions:recurring_delete' recurring.pk %}" 
+                               class="text-red-600 hover:text-red-800 dark:text-red-400">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="text-center">
+                            <p class="text-2xl font-bold {% if recurring.transaction_type == 'income' %}text-green-600{% else %}text-red-600{% endif %}">
+                                {% if recurring.transaction_type == 'income' %}+{% else %}-{% endif %}${{ recurring.amount|floatformat:2 }}
+                            </p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Amount</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ recurring.get_frequency_display }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Frequency</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Next Due:</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ recurring.next_execution_date|date:"M d, Y" }}</span>
+                        </div>
+                        
+                        {% if recurring.end_date %}
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Ends:</span>
+                                <span class="font-medium text-gray-900 dark:text-white">{{ recurring.end_date|date:"M d, Y" }}</span>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Status:</span>
+                            <span class="font-medium {% if recurring.is_active %}text-green-600{% else %}text-red-600{% endif %}">
+                                {% if recurring.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    {% if recurring.is_active and recurring.is_due %}
+                        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <a href="{% url 'transactions:execute_recurring' recurring.pk %}" 
+                               class="w-full bg-green-600 hover:bg-green-700 text-white text-center px-4 py-2 rounded-lg transition-colors duration-200 block">
+                                <i class="fas fa-play mr-2"></i>Execute Now
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
+            <i class="fas fa-sync-alt text-gray-400 text-6xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Recurring Transactions</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">Set up recurring transactions to automate your regular income and expenses.</p>
+            <a href="{% url 'transactions:recurring_create' %}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>Create Your First Recurring Transaction
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
